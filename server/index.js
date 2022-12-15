@@ -1,6 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
-const { request } = require("express");
+const request = require("request");
 
 const port = 5000;
 
