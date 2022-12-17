@@ -4,6 +4,8 @@ const request = require("request");
 
 const port = 5000;
 
+let access_token = ''
+
 dotenv.config();
 
 let spotify_client_id = process.env.SPOTIFY_CLIENT_ID;
@@ -27,10 +29,10 @@ let generateRandomString = function (length) {
 app.get("/auth/login", (req, res) => {
   //scope is a space seperated list of actions that our app can be allowed to do on a user's behalf
   let scope = "streaming user-read-email user-read-private";
-
+  
   //state is a randomly generated string to protect against attacks such as cross-site request forgery
   let state = generateRandomString(16);
-
+  
   let auth_query_parameters = new URLSearchParams({
     response_type: "code", //code will be exchanged for an access token
     client_id: spotify_client_id,
@@ -38,11 +40,12 @@ app.get("/auth/login", (req, res) => {
     redirect_uri: "http://localhost:3000/auth/callback",
     state: state,
   });
-
+  
   res.redirect(
     "https://accounts.spotify.com/authorize/?" +
       auth_query_parameters.toString()
   );
+
 });
 
 //request the access token using the Authorization code requested in the previous step
@@ -59,7 +62,7 @@ app.get("/auth/callback", (req, res) => {
     },
     headers: {
       //a base64 encoded string that contains the client ID and client secret keys
-      Authorization:
+      "Authorization":
         "Basic " +
         Buffer.from(spotify_client_id + ":" + spotify_client_secret).toString(
           "base64"
@@ -71,7 +74,7 @@ app.get("/auth/callback", (req, res) => {
 
   request.post(authOptions, function (error, reponse, body) {
     if (!error && reponse.statusCode === 200) {
-      let access_token = body.access_token; //access token stored locally
+      access_token = body.access_token; //access token stored locally
       res.redirect("/"); //redirected to root route
     }
   });
@@ -79,7 +82,11 @@ app.get("/auth/callback", (req, res) => {
 
 //return access token
 //this access token will be used to instantiate the Web Playback SDK and eventually perform API calls using the Web API
-app.get("/auth/token", (req, res) => {});
+app.get("/auth/token", (req, res) => {
+  res.json({
+    access_token: access_token
+  })
+});
 
 app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
